@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package ms_stt;
+
+// ==========================
+// STT Service
+// ==========================
+service SpeechToText {
+  // Bidirectional streaming:
+  // - Client streams audio chunks
+  // - Server streams final transcription messages
+  rpc StreamTranscribe(stream STTRequest) returns (stream STTResponse);
+}
+
+// ==========================
+// Requests
+// ==========================
+message STTRequest {
+  oneof payload {
+    // Must be sent first
+    STTConfig config = 1;
+
+    // Raw audio chunk
+    AudioChunk audio = 2;
+
+    // Optional explicit end of stream
+    EndOfStream end = 3;
+  }
+}
+
+message STTConfig {
+  string session_id = 1;
+
+  // Audio format
+  int32 sample_rate_hz = 2;   // e.g. 16000
+  int32 channels = 3;         // usually 1
+  string encoding = 4;        // "LINEAR16", "FLOAT32"
+}
+
+message AudioChunk {
+  bytes audio = 1;
+}
+
+message EndOfStream {}
+
+// ==========================
+// Responses
+// ==========================
+message STTResponse {
+  oneof result {
+    // Each message contains a complete, final transcription
+    FinalTranscript final = 1;
+
+    // Error message, if any
+    STTError error = 2;
+  }
+}
+
+message FinalTranscript {
+  string text = 1;
+  float confidence = 2;
+}
+
+message STTError {
+  string message = 1;
+  int32 code = 2;
+}
